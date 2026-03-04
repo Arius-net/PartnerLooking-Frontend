@@ -431,6 +431,11 @@ body {
   .footer-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .hero {
+    position: static;
+    box-shadow: none;
+  }
 }
 
 @media (max-width: 720px) {
@@ -474,6 +479,11 @@ body {
   .filter-btn {
     width: 100%;
   }
+
+  .hero {
+    position: static;
+    box-shadow: none;
+  }
 }
 
 .roommates-page {
@@ -512,6 +522,10 @@ body {
 .roommates-tabs-row {
   padding-top: 12px;
   padding-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
 }
 
 .roommates-content {
@@ -749,6 +763,113 @@ body {
 .roommate-date {
   color: #73849a;
   font-size: 0.88rem;
+}
+
+.roommates-hero {
+  background: linear-gradient(120deg, var(--hero-start) 0%, var(--hero-end) 100%);
+  color: #f4f8ff;
+  position: relative !important;
+  top: auto !important;
+  z-index: auto !important;
+  box-shadow: none !important;
+}
+
+.roommates-hero-inner {
+  min-height: 238px;
+  padding-top: 34px;
+  padding-bottom: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 42px;
+}
+
+.roommates-hero-copy {
+  max-width: 560px;
+}
+
+.roommates-hero-eyebrow {
+  display: inline-block;
+  margin-bottom: 8px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.roommates-hero h1 {
+  margin: 0;
+  font-size: clamp(2rem, 3vw, 3rem);
+  letter-spacing: -0.02em;
+  line-height: 1.08;
+}
+
+.roommates-hero p {
+  margin: 10px 0 0;
+  max-width: 620px;
+  color: #d8e8ff;
+  line-height: 1.55;
+  font-size: 1.02rem;
+}
+
+.roommates-hero-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  min-width: 610px;
+}
+
+.roommates-hero-stats div {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.12);
+  padding: 22px 18px;
+  text-align: center;
+}
+
+.roommates-hero-stats strong {
+  display: block;
+  font-size: 2.15rem;
+  line-height: 1;
+}
+
+.roommates-hero-stats span {
+  display: block;
+  margin-top: 10px;
+  color: #d8e8ff;
+  font-size: 1rem;
+}
+
+@media (max-width: 1080px) {
+  .roommates-hero-inner {
+    flex-direction: column;
+    align-items: flex-start;
+    min-height: auto;
+  }
+
+  .roommates-hero-stats {
+    width: 100%;
+    min-width: 0;
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .roommates-hero-inner {
+    min-height: auto;
+    gap: 16px;
+  }
+
+  .roommates-hero-stats {
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .roommates-tabs-row {
+    flex-wrap: wrap;
+  }
 }
 
 @media (max-width: 1080px) {

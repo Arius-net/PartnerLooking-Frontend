@@ -254,6 +254,33 @@ export default function RoommatesPage() {
         </div>
       </section>
 
+      <section className="roommates-hero">
+        <div className="roommates-shell roommates-hero-inner">
+          <div className="roommates-hero-copy">
+            <span className="roommates-hero-eyebrow">Roommates</span>
+            <h1>Encuentra tu roommate ideal</h1>
+            <p>
+              Descubre perfiles compatibles por universidad, zona, presupuesto y estilo de vida.
+            </p>
+          </div>
+
+          <div className="roommates-hero-stats">
+            <div>
+              <strong>6+</strong>
+              <span>Perfiles compatibles</span>
+            </div>
+            <div>
+              <strong>100%</strong>
+              <span>Verificados</span>
+            </div>
+            <div>
+              <strong>24/7</strong>
+              <span>Soporte de seguridad</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <main className="roommates-shell roommates-content">
         <section className="roommates-header-block">
           <div>
