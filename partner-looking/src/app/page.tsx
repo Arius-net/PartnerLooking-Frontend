@@ -186,9 +186,9 @@ export default function Home() {
             <button className="tab active" type="button" role="tab" aria-selected="true">
               Alojamiento
             </button>
-            <button className="tab" type="button" role="tab" aria-selected="false">
+            <Link className="tab" href="/vistas/roommates" role="tab" aria-selected="false">
               Roommates
-            </button>
+            </Link>
           </div>
           <button className="filter-btn" type="button">
             Filtros
