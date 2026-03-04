@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 
 type Feature = {
   title: string;
@@ -224,6 +225,9 @@ export default function Home() {
                   <span className="price">{item.price}</span>
                   <span className="people">{item.people}</span>
                 </div>
+                <Link className="card-link" href="/vistas/publicacion-detalle">
+                  Ver detalle
+                </Link>
               </div>
             </article>
           ))}
