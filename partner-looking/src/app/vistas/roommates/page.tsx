@@ -229,12 +229,12 @@ export default function RoommatesPage() {
               <path d="M20 4H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h2v4l4-4h10a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1z" />
             </svg>
           </button>
-          <button className="icon-btn" type="button" aria-label="Perfil">
+          <Link className="icon-btn" href="/vistas/perfil-usuario" aria-label="Perfil">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <circle cx="12" cy="8" r="3.5" />
               <path d="M5 20c0-3.6 2.7-5.8 7-5.8 4.3 0 7 2.2 7 5.8" />
             </svg>
-          </button>
+          </Link>
         </div>
       </header>
 
