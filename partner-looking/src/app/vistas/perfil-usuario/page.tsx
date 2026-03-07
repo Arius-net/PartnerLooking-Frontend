@@ -4,13 +4,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 
-type ProfileTab = "informacion" | "publicaciones" | "favoritos" | "configuracion";
+type ProfileTab = "informacion" | "publicaciones" | "favoritos";
 
 const tabs: Array<{ id: ProfileTab; label: string; icon: string }> = [
   { id: "informacion", label: "Información", icon: "user" },
   { id: "publicaciones", label: "Mis publicaciones", icon: "home" },
   { id: "favoritos", label: "Favoritos", icon: "heart" },
-  { id: "configuracion", label: "Configuración", icon: "gear" },
 ];
 
 const verificationItems = [
@@ -238,10 +237,134 @@ export default function PerfilUsuarioPage() {
             </>
           )}
 
-          {activeTab !== "informacion" && (
-            <section className="profile-panel empty-state-panel">
-              <h3>{tabs.find((tab) => tab.id === activeTab)?.label}</h3>
-              <p>Esta sección se puede construir como una nueva vista o mantener dentro del perfil.</p>
+          {activeTab === "publicaciones" && (
+            <section className="profile-panel">
+              <h3>Mis publicaciones</h3>
+              <div className="publications-grid">
+                <article className="publication-card">
+                  <div className="publication-image">
+                    <Image
+                      src="https://images.pexels.com/photos/1457842/pexels-photo-1457842.jpeg?auto=compress&cs=tinysrgb&w=500"
+                      alt="Departamento Condesa"
+                      fill
+                      sizes="300px"
+                    />
+                    <span className="publication-status active">Activo</span>
+                  </div>
+                  <div className="publication-info">
+                    <h4>Departamento en Condesa</h4>
+                    <p className="publication-type">Busco compañero/a</p>
+                    <p className="publication-price">$8,500/mes</p>
+                    <div className="publication-actions">
+                      <button className="publication-btn edit-btn">Editar</button>
+                      <button className="publication-btn pause-btn">Pausar</button>
+                    </div>
+                  </div>
+                </article>
+
+                <article className="publication-card">
+                  <div className="publication-image">
+                    <Image
+                      src="https://images.pexels.com/photos/1350789/pexels-photo-1350789.jpeg?auto=compress&cs=tinysrgb&w=500"
+                      alt="Cuarto Roma"
+                      fill
+                      sizes="300px"
+                    />
+                    <span className="publication-status paused">Pausado</span>
+                  </div>
+                  <div className="publication-info">
+                    <h4>Cuarto disponible - Roma</h4>
+                    <p className="publication-type">Ofrezco cuarto</p>
+                    <p className="publication-price">$7,200/mes</p>
+                    <div className="publication-actions">
+                      <button className="publication-btn edit-btn">Editar</button>
+                      <button className="publication-btn resume-btn">Reanudar</button>
+                    </div>
+                  </div>
+                </article>
+              </div>
+            </section>
+          )}
+
+          {activeTab === "favoritos" && (
+            <section className="profile-panel">
+              <h3>Mis favoritos</h3>
+              <div className="favorites-grid">
+                <article className="listing-card">
+                  <div className="image-wrap">
+                    <Image
+                      src="https://images.pexels.com/photos/1743231/pexels-photo-1743231.jpeg?auto=compress&cs=tinysrgb&w=500"
+                      alt="Departamento San Ángel"
+                      fill
+                      sizes="300px"
+                    />
+                    <span className="pill">Verificado</span>
+                    <button type="button" className="save-btn" title="Remover de favoritos">
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 20.5s-6.5-3.8-6.5-8.8c0-2.4 1.9-4.2 4.2-4.2 1.3 0 2.2.5 2.8 1.4.6-.9 1.5-1.4 2.8-1.4 2.3 0 4.2 1.8 4.2 4.2 0 5-6.5 8.8-6.5 8.8z" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div className="card-body">
+                    <h3>Departamento San Ángel</h3>
+                    <p className="location">San Ángel, CDMX</p>
+                    <div className="meta-row">
+                      <strong className="price">$9,500/mes</strong>
+                      <span className="people">2 personas</span>
+                    </div>
+                  </div>
+                </article>
+
+                <article className="listing-card">
+                  <div className="image-wrap">
+                    <Image
+                      src="https://images.pexels.com/photos/1438761/pexels-photo-1438761.jpeg?auto=compress&cs=tinysrgb&w=500"
+                      alt="Cuarto Polanco"
+                      fill
+                      sizes="300px"
+                    />
+                    <span className="pill">Verificado</span>
+                    <button type="button" className="save-btn" title="Remover de favoritos">
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 20.5s-6.5-3.8-6.5-8.8c0-2.4 1.9-4.2 4.2-4.2 1.3 0 2.2.5 2.8 1.4.6-.9 1.5-1.4 2.8-1.4 2.3 0 4.2 1.8 4.2 4.2 0 5-6.5 8.8-6.5 8.8z" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div className="card-body">
+                    <h3>Cuarto Polanco</h3>
+                    <p className="location">Polanco, CDMX</p>
+                    <div className="meta-row">
+                      <strong className="price">$8,200/mes</strong>
+                      <span className="people">4 personas</span>
+                    </div>
+                  </div>
+                </article>
+
+                <article className="listing-card">
+                  <div className="image-wrap">
+                    <Image
+                      src="https://images.pexels.com/photos/1595578/pexels-photo-1595578.jpeg?auto=compress&cs=tinysrgb&w=500"
+                      alt="Depa Coyoacán"
+                      fill
+                      sizes="300px"
+                    />
+                    <span className="pill">Verificado</span>
+                    <button type="button" className="save-btn" title="Remover de favoritos">
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 20.5s-6.5-3.8-6.5-8.8c0-2.4 1.9-4.2 4.2-4.2 1.3 0 2.2.5 2.8 1.4.6-.9 1.5-1.4 2.8-1.4 2.3 0 4.2 1.8 4.2 4.2 0 5-6.5 8.8-6.5 8.8z" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div className="card-body">
+                    <h3>Depa Coyoacán</h3>
+                    <p className="location">Coyoacán, CDMX</p>
+                    <div className="meta-row">
+                      <strong className="price">$7,800/mes</strong>
+                      <span className="people">3 personas</span>
+                    </div>
+                  </div>
+                </article>
+              </div>
             </section>
           )}
         </section>
