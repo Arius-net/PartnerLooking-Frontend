@@ -1,4 +1,8 @@
+"use client";
+
+import { FormEvent, useState } from "react";
 import Link from "next/link";
+import { AUTH_REGISTER_PATH, postJson } from "@/lib/api";
 
 function MailIcon() {
   return (
@@ -62,6 +66,52 @@ function ShieldIcon() {
 }
 
 export default function RegistroPage() {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+    setSuccess("");
+
+    if (!name || !email || !phone || !password || !confirmPassword) {
+      setError("Completa todos los campos obligatorios.");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError("Las contraseñas no coinciden.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await postJson(AUTH_REGISTER_PATH, {
+        name,
+        email,
+        phone,
+        password,
+      });
+      setSuccess("Registro exitoso. Tu cuenta quedó conectada con el backend.");
+      setName("");
+      setEmail("");
+      setPhone("");
+      setPassword("");
+      setConfirmPassword("");
+    } catch (submitError) {
+      const message = submitError instanceof Error ? submitError.message : "No se pudo completar el registro.";
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <main className="auth-page auth-register-page">
       <section className="auth-split auth-split-left">
@@ -107,57 +157,87 @@ export default function RegistroPage() {
             <h2>Información personal</h2>
             <p>Completa tus datos básicos para continuar</p>
 
-            <label className="auth-field">
-              <span>Nombre completo *</span>
-              <div className="auth-input-wrap">
-                <UserIcon />
-                <input type="text" placeholder="Juan Pérez González" />
-              </div>
-            </label>
+            <form onSubmit={handleSubmit}>
+              <label className="auth-field">
+                <span>Nombre completo *</span>
+                <div className="auth-input-wrap">
+                  <UserIcon />
+                  <input
+                    type="text"
+                    placeholder="Juan Pérez González"
+                    value={name}
+                    onChange={(event) => setName(event.target.value)}
+                  />
+                </div>
+              </label>
 
-            <label className="auth-field">
-              <span>Correo electrónico *</span>
-              <div className="auth-input-wrap">
-                <MailIcon />
-                <input type="email" placeholder="tu@ejemplo.com" />
-              </div>
-              <small>Preferiblemente tu correo universitario</small>
-            </label>
+              <label className="auth-field">
+                <span>Correo electrónico *</span>
+                <div className="auth-input-wrap">
+                  <MailIcon />
+                  <input
+                    type="email"
+                    placeholder="tu@ejemplo.com"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                  />
+                </div>
+                <small>Preferiblemente tu correo universitario</small>
+              </label>
 
-            <label className="auth-field">
-              <span>Teléfono *</span>
-              <div className="auth-input-wrap">
-                <PhoneIcon />
-                <input type="tel" placeholder="+52 55 1234 5678" />
-              </div>
-            </label>
+              <label className="auth-field">
+                <span>Teléfono *</span>
+                <div className="auth-input-wrap">
+                  <PhoneIcon />
+                  <input
+                    type="tel"
+                    placeholder="+52 55 1234 5678"
+                    value={phone}
+                    onChange={(event) => setPhone(event.target.value)}
+                  />
+                </div>
+              </label>
 
-            <label className="auth-field">
-              <span>Contraseña *</span>
-              <div className="auth-input-wrap auth-input-trailing">
-                <LockIcon />
-                <input type="password" placeholder="••••••••" />
-                <button type="button" aria-label="Mostrar contraseña" className="auth-trailing-btn">
-                  <EyeIcon />
-                </button>
-              </div>
-            </label>
+              <label className="auth-field">
+                <span>Contraseña *</span>
+                <div className="auth-input-wrap auth-input-trailing">
+                  <LockIcon />
+                  <input
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                  />
+                  <button type="button" aria-label="Mostrar contraseña" className="auth-trailing-btn">
+                    <EyeIcon />
+                  </button>
+                </div>
+              </label>
 
-            <label className="auth-field">
-              <span>Confirmar contraseña *</span>
-              <div className="auth-input-wrap auth-input-trailing">
-                <LockIcon />
-                <input type="password" placeholder="••••••••" />
-                <button type="button" aria-label="Mostrar contraseña" className="auth-trailing-btn">
-                  <EyeIcon />
-                </button>
-              </div>
-            </label>
+              <label className="auth-field">
+                <span>Confirmar contraseña *</span>
+                <div className="auth-input-wrap auth-input-trailing">
+                  <LockIcon />
+                  <input
+                    type="password"
+                    placeholder="••••••••"
+                    value={confirmPassword}
+                    onChange={(event) => setConfirmPassword(event.target.value)}
+                  />
+                  <button type="button" aria-label="Mostrar contraseña" className="auth-trailing-btn">
+                    <EyeIcon />
+                  </button>
+                </div>
+              </label>
 
-            <button type="button" className="auth-primary-btn">
-              Continuar
-              <ArrowIcon />
-            </button>
+              {error && <p className="auth-feedback auth-feedback-error">{error}</p>}
+              {success && <p className="auth-feedback auth-feedback-success">{success}</p>}
+
+              <button type="submit" className="auth-primary-btn" disabled={loading}>
+                {loading ? "Creando cuenta..." : "Continuar"}
+                <ArrowIcon />
+              </button>
+            </form>
 
             <p className="auth-register-line">
               ¿Ya tienes una cuenta? <Link href="/vistas/login">Inicia sesión</Link>

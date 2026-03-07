@@ -1,4 +1,8 @@
+"use client";
+
+import { FormEvent, useState } from "react";
 import Link from "next/link";
+import { AUTH_LOGIN_PATH, postJson } from "@/lib/api";
 
 function MailIcon() {
   return (
@@ -64,6 +68,46 @@ function HomeIcon() {
 }
 
 export default function LoginPage() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+    setSuccess("");
+
+    if (!email || !password) {
+      setError("Ingresa tu correo y contraseña.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const response = await postJson<{ token?: string; accessToken?: string }>(AUTH_LOGIN_PATH, {
+        email,
+        password,
+        rememberMe,
+      });
+
+      const token = response.token || response.accessToken;
+      if (token) {
+        localStorage.setItem("partnerlooking_token", token);
+      }
+
+      setSuccess("Inicio de sesión exitoso. Ya estás conectado con el backend.");
+    } catch (submitError) {
+      const message = submitError instanceof Error ? submitError.message : "No se pudo iniciar sesión.";
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <main className="auth-page">
       <section className="auth-split auth-split-left">
@@ -113,37 +157,56 @@ export default function LoginPage() {
             <h2>Iniciar sesión</h2>
             <p>Ingresa a tu cuenta para continuar</p>
 
-            <label className="auth-field">
-              <span>Correo electrónico</span>
-              <div className="auth-input-wrap">
-                <MailIcon />
-                <input type="email" placeholder="tu@ejemplo.com" />
-              </div>
-            </label>
-
-            <label className="auth-field">
-              <span>Contraseña</span>
-              <div className="auth-input-wrap auth-input-trailing">
-                <LockIcon />
-                <input type="password" placeholder="••••••••" />
-                <button type="button" aria-label="Mostrar contraseña" className="auth-trailing-btn">
-                  <EyeIcon />
-                </button>
-              </div>
-            </label>
-
-            <div className="auth-meta-row">
-              <label className="auth-check">
-                <input type="checkbox" />
-                <span>Recordarme</span>
+            <form onSubmit={handleSubmit}>
+              <label className="auth-field">
+                <span>Correo electrónico</span>
+                <div className="auth-input-wrap">
+                  <MailIcon />
+                  <input
+                    type="email"
+                    placeholder="tu@ejemplo.com"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                  />
+                </div>
               </label>
-              <Link href="#">¿Olvidaste tu contraseña?</Link>
-            </div>
 
-            <button type="button" className="auth-primary-btn">
-              Iniciar sesión
-              <ArrowIcon />
-            </button>
+              <label className="auth-field">
+                <span>Contraseña</span>
+                <div className="auth-input-wrap auth-input-trailing">
+                  <LockIcon />
+                  <input
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                  />
+                  <button type="button" aria-label="Mostrar contraseña" className="auth-trailing-btn">
+                    <EyeIcon />
+                  </button>
+                </div>
+              </label>
+
+              <div className="auth-meta-row">
+                <label className="auth-check">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(event) => setRememberMe(event.target.checked)}
+                  />
+                  <span>Recordarme</span>
+                </label>
+                <Link href="#">¿Olvidaste tu contraseña?</Link>
+              </div>
+
+              {error && <p className="auth-feedback auth-feedback-error">{error}</p>}
+              {success && <p className="auth-feedback auth-feedback-success">{success}</p>}
+
+              <button type="submit" className="auth-primary-btn" disabled={loading}>
+                {loading ? "Conectando..." : "Iniciar sesión"}
+                <ArrowIcon />
+              </button>
+            </form>
 
             <p className="auth-register-line">
               ¿No tienes una cuenta? <Link href="/vistas/registro">Regístrate gratis</Link>
