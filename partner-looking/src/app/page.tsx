@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import AdminPanelLink from "@/components/AdminPanelLink";
 
 type Feature = {
   title: string;
@@ -142,6 +143,7 @@ export default function Home() {
         <Link className="publish-btn" href="/vistas/publicar-publicacion">
           + Publicar
         </Link>
+        <AdminPanelLink />
         <button className="icon-btn" type="button" aria-label="Mensajes">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M20 4H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h2v4l4-4h10a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1z" />

@@ -99,6 +99,19 @@ export default function LoginPage() {
         localStorage.setItem("partnerlooking_token", token);
       }
 
+      const candidateRole =
+        (response as { role?: string }).role ||
+        (response as { rol?: string }).rol ||
+        (response as { user?: { role?: string; rol?: string } }).user?.role ||
+        (response as { user?: { role?: string; rol?: string } }).user?.rol ||
+        (response as { usuario?: { role?: string; rol?: string } }).usuario?.role ||
+        (response as { usuario?: { role?: string; rol?: string } }).usuario?.rol ||
+        "";
+
+      if (candidateRole) {
+        localStorage.setItem("partnerlooking_role", candidateRole);
+      }
+
       setSuccess("Inicio de sesión exitoso. Ya estás conectado con el backend.");
     } catch (submitError) {
       const message = submitError instanceof Error ? submitError.message : "No se pudo iniciar sesión.";
