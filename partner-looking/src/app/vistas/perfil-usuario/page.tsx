@@ -15,13 +15,6 @@ const tabs: Array<{ id: ProfileTab; label: string; icon: string }> = [
   { id: "favoritos", label: "Favoritos", icon: "heart" },
 ];
 
-const verificationItems = [
-  { label: "Email", status: "Verificado" },
-  { label: "Teléfono", status: "Verificado" },
-  { label: "Identidad", status: "Verificado" },
-  { label: "Credencial universitaria", status: "Verificar" },
-];
-
 function BackIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -137,10 +130,20 @@ export default function PerfilUsuarioPage() {
     void (async () => {
       try {
         setLoading(true);
-        const [user, userContact] = await Promise.all([getUserById(userId), getUserContact(userId)]);
+        const user = await getUserById(userId);
         if (active) {
           setProfile(user);
-          setContact(userContact);
+        }
+
+        try {
+          const userContact = await getUserContact(userId);
+          if (active) {
+            setContact(userContact);
+          }
+        } catch {
+          if (active) {
+            setContact({ email: "", phone: "" });
+          }
         }
       } catch (requestError) {
         if (active) {
@@ -229,11 +232,17 @@ export default function PerfilUsuarioPage() {
   const summaryUsername = profile?.username ? `@${profile.username}` : "Sin usuario";
   const summaryEmail = profile?.email || contact.email || (loading ? "Cargando..." : "Sin correo");
   const summaryPhone = profile?.phone || contact.phone || (loading ? "Cargando..." : "Sin teléfono");
+  const verificationItems = [
+    { label: "Email", status: summaryEmail && !loading ? "Verificado" : "Pendiente" },
+    { label: "Teléfono", status: summaryPhone && !loading ? "Verificado" : "Pendiente" },
+    { label: "Identidad", status: "Pendiente" },
+    { label: "Credencial universitaria", status: "Pendiente" },
+  ];
 
   return (
     <div className="profile-page">
       <header className="profile-topbar">
-        <Link href="/vistas/roommates" className="back-link">
+        <Link href="/vistas/alojamiento" className="back-link">
           <BackIcon />
           Volver
         </Link>
@@ -251,7 +260,7 @@ export default function PerfilUsuarioPage() {
               <div className="profile-avatar-wrap">
                 <Image
                   src="https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg?auto=compress&cs=tinysrgb&w=1200"
-                  alt="Juan Pérez"
+                  alt={summaryName}
                   fill
                   sizes="160px"
                 />
@@ -271,15 +280,15 @@ export default function PerfilUsuarioPage() {
 
               <div className="profile-stats-grid">
                 <div>
-                  <strong>4.8</strong>
+                  <strong>-</strong>
                   <span>Calificación</span>
                 </div>
                 <div>
-                  <strong>15</strong>
+                  <strong>-</strong>
                   <span>Reseñas</span>
                 </div>
                 <div>
-                  <strong>2</strong>
+                  <strong>-</strong>
                   <span>Publicaciones</span>
                 </div>
               </div>
@@ -290,7 +299,7 @@ export default function PerfilUsuarioPage() {
                   {verificationItems.map((item) => (
                     <div key={item.label} className="verification-row">
                       <span>{item.label}</span>
-                      <strong className={item.status === "Verificar" ? "verify-link" : "verify-ok"}>
+                      <strong className={item.status === "Pendiente" ? "verify-link" : "verify-ok"}>
                         {item.status}
                       </strong>
                     </div>
@@ -312,7 +321,7 @@ export default function PerfilUsuarioPage() {
                 </div>
               </div>
 
-              <button type="button" className="edit-profile-btn">
+              <button type="button" className="edit-profile-btn" onClick={() => setActiveTab("informacion")}>
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M4 20h16" />
                   <path d="M14.5 5.5 18.5 9.5 9 19H5v-4z" />
@@ -345,16 +354,16 @@ export default function PerfilUsuarioPage() {
                 <div className="profile-form-grid">
                   <label className="profile-field profile-field-full">
                     <span>Nombre completo</span>
-                    <input type="text" placeholder="Juan Pérez González" value={profile?.fullName || ""} onChange={(event) => setProfile((current) => ({ ...(current || { id: "", fullName: "", username: "", email: "", phone: "", age: 0, gender: "", university: "", career: "", semester: "", about: "" }), fullName: event.target.value }))} />
+                    <input type="text" placeholder="Tu nombre completo" value={profile?.fullName || ""} onChange={(event) => setProfile((current) => ({ ...(current || { id: "", fullName: "", username: "", email: "", phone: "", age: 0, gender: "", university: "", career: "", semester: "", about: "" }), fullName: event.target.value }))} />
                   </label>
                   <label className="profile-field profile-field-full verified-field">
                     <span>Email</span>
-                    <input type="email" placeholder="juan.perez@ejemplo.com" value={profile?.email || ""} onChange={(event) => setProfile((current) => ({ ...(current || { id: "", fullName: "", username: "", email: "", phone: "", age: 0, gender: "", university: "", career: "", semester: "", about: "" }), email: event.target.value }))} />
+                    <input type="email" placeholder="tu@correo.com" value={profile?.email || ""} onChange={(event) => setProfile((current) => ({ ...(current || { id: "", fullName: "", username: "", email: "", phone: "", age: 0, gender: "", university: "", career: "", semester: "", about: "" }), email: event.target.value }))} />
                     <span className="field-check">✓</span>
                   </label>
                   <label className="profile-field verified-field">
                     <span>Teléfono</span>
-                    <input type="tel" placeholder="+52 55 1234 5678" value={profile?.phone || ""} onChange={(event) => setProfile((current) => ({ ...(current || { id: "", fullName: "", username: "", email: "", phone: "", age: 0, gender: "", university: "", career: "", semester: "", about: "" }), phone: event.target.value }))} />
+                    <input type="tel" placeholder="Tu teléfono" value={profile?.phone || ""} onChange={(event) => setProfile((current) => ({ ...(current || { id: "", fullName: "", username: "", email: "", phone: "", age: 0, gender: "", university: "", career: "", semester: "", about: "" }), phone: event.target.value }))} />
                     <span className="field-check">✓</span>
                   </label>
                   <label className="profile-field">
@@ -363,7 +372,8 @@ export default function PerfilUsuarioPage() {
                   </label>
                   <label className="profile-field profile-field-full">
                     <span>Género</span>
-                    <select value={profile?.gender || "Hombre"} onChange={(event) => setProfile((current) => ({ ...(current || { id: "", fullName: "", username: "", email: "", phone: "", age: 0, gender: "", university: "", career: "", semester: "", about: "" }), gender: event.target.value }))}>
+                    <select value={profile?.gender || ""} onChange={(event) => setProfile((current) => ({ ...(current || { id: "", fullName: "", username: "", email: "", phone: "", age: 0, gender: "", university: "", career: "", semester: "", about: "" }), gender: event.target.value }))}>
+                      <option value="">Selecciona una opción</option>
                       <option>Hombre</option>
                       <option>Mujer</option>
                       <option>No binario</option>
@@ -378,15 +388,16 @@ export default function PerfilUsuarioPage() {
                 <div className="profile-form-grid">
                   <label className="profile-field profile-field-full">
                     <span>Universidad</span>
-                    <input type="text" placeholder="Universidad Nacional Autónoma de México" value={profile?.university || ""} onChange={(event) => setProfile((current) => ({ ...(current || { id: "", fullName: "", username: "", email: "", phone: "", age: 0, gender: "", university: "", career: "", semester: "", about: "" }), university: event.target.value }))} />
+                    <input type="text" placeholder="Tu universidad" value={profile?.university || ""} onChange={(event) => setProfile((current) => ({ ...(current || { id: "", fullName: "", username: "", email: "", phone: "", age: 0, gender: "", university: "", career: "", semester: "", about: "" }), university: event.target.value }))} />
                   </label>
                   <label className="profile-field profile-field-full">
                     <span>Carrera</span>
-                    <input type="text" placeholder="Ingeniería en Computación" value={profile?.career || ""} onChange={(event) => setProfile((current) => ({ ...(current || { id: "", fullName: "", username: "", email: "", phone: "", age: 0, gender: "", university: "", career: "", semester: "", about: "" }), career: event.target.value }))} />
+                    <input type="text" placeholder="Tu carrera" value={profile?.career || ""} onChange={(event) => setProfile((current) => ({ ...(current || { id: "", fullName: "", username: "", email: "", phone: "", age: 0, gender: "", university: "", career: "", semester: "", about: "" }), career: event.target.value }))} />
                   </label>
                   <label className="profile-field profile-field-full">
                     <span>Semestre</span>
-                    <select value={profile?.semester || "6to semestre"} onChange={(event) => setProfile((current) => ({ ...(current || { id: "", fullName: "", username: "", email: "", phone: "", age: 0, gender: "", university: "", career: "", semester: "", about: "" }), semester: event.target.value }))}>
+                    <select value={profile?.semester || ""} onChange={(event) => setProfile((current) => ({ ...(current || { id: "", fullName: "", username: "", email: "", phone: "", age: 0, gender: "", university: "", career: "", semester: "", about: "" }), semester: event.target.value }))}>
+                      <option value="">Selecciona una opción</option>
                       <option>1er semestre</option>
                       <option>2do semestre</option>
                       <option>3er semestre</option>
@@ -405,7 +416,7 @@ export default function PerfilUsuarioPage() {
                 <textarea
                   className="profile-about"
                   rows={5}
-                  placeholder="Estudiante de ingeniería en la UNAM, me gusta la tecnología, el deporte y conocer gente nueva. Busco un ambiente tranquilo y respetuoso para vivir."
+                  placeholder="Cuéntanos sobre tu estilo de vida y preferencias de convivencia."
                   value={profile?.about || ""}
                   onChange={(event) => setProfile((current) => ({ ...(current || { id: "", fullName: "", username: "", email: "", phone: "", age: 0, gender: "", university: "", career: "", semester: "", about: "" }), about: event.target.value }))}
                 />

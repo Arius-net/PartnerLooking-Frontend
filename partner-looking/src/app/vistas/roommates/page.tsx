@@ -206,6 +206,8 @@ function MiniIcon({ kind }: { kind: string }) {
 }
 
 export default function RoommatesPage() {
+  const profilesToRender: RoommateProfile[] = [];
+
   return (
     <div className="roommates-page">
       <header className="roommates-hero-bar">
@@ -221,14 +223,14 @@ export default function RoommatesPage() {
               placeholder="Buscar por ciudad, universidad o zona..."
             />
           </div>
-          <button className="publish-btn" type="button">
+          <Link className="publish-btn" href="/vistas/publicar-publicacion">
             + Publicar
-          </button>
-          <button className="icon-btn" type="button" aria-label="Mensajes">
+          </Link>
+          <Link className="icon-btn" href="/vistas/perfil-usuario" aria-label="Mensajes">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M20 4H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h2v4l4-4h10a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1z" />
             </svg>
-          </button>
+          </Link>
           <Link className="icon-btn" href="/vistas/perfil-usuario" aria-label="Perfil">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <circle cx="12" cy="8" r="3.5" />
@@ -241,7 +243,7 @@ export default function RoommatesPage() {
       <section className="roommates-toolbar-wrap">
         <div className="listing-area roommates-shell roommates-tabs-row">
           <div className="tabs">
-            <Link className="tab" href="/vistas/roommates" role="tab" aria-selected="false">
+            <Link className="tab" href="/vistas/alojamiento" role="tab" aria-selected="false">
               Alojamiento
             </Link>
             <button className="tab active" type="button" role="tab" aria-selected="true">
@@ -303,10 +305,14 @@ export default function RoommatesPage() {
           ))}
         </div>
 
-        <p className="results-hint">Mostrando 6 perfiles compatibles</p>
+        <p className="results-hint">Mostrando {profilesToRender.length} perfiles compatibles</p>
+
+        {profilesToRender.length === 0 && (
+          <p className="auth-feedback">Aún no hay endpoint de roommates conectado. Esta vista se habilitará con datos reales.</p>
+        )}
 
         <section className="roommate-grid">
-          {profiles.map((profile) => (
+          {profilesToRender.map((profile) => (
             <article className="roommate-card" key={profile.name}>
               <div className="roommate-card-top">
                 {profile.verified ? <span className="verified-pill">Verificado</span> : <span />}

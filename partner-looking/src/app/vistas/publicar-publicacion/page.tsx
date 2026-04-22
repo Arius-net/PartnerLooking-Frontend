@@ -260,7 +260,7 @@ export default function CreatePublicationPage() {
         type: selectedType,
       });
       setPublishMessage("Publicación creada correctamente.");
-      router.push("/vistas/roommates");
+      router.push("/vistas/alojamiento");
     } catch (error) {
       setPublishError(error instanceof Error ? error.message : "No se pudo crear la publicación.");
     } finally {
@@ -271,7 +271,7 @@ export default function CreatePublicationPage() {
   return (
     <div className="create-page">
       <header className="create-topbar">
-        <Link href="/vistas/roommates" className="create-cancel-link">
+        <Link href="/vistas/alojamiento" className="create-cancel-link">
           <ArrowLeftIcon />
           Cancelar
         </Link>

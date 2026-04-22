@@ -1,10 +1,10 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { loginUser } from "@/lib/services";
-import { saveSession } from "@/lib/session";
+import { getStoredRole, getStoredToken, saveSession } from "@/lib/session";
 
 function MailIcon() {
   return (
@@ -78,6 +78,16 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  useEffect(() => {
+    const token = getStoredToken();
+    if (!token) {
+      return;
+    }
+
+    const role = getStoredRole();
+    router.replace(["admin", "ADMIN", "administrator", "Administrador"].includes(role) ? "/vistas/documentos-verificacion" : "/vistas/alojamiento");
+  }, [router]);
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
@@ -98,7 +108,7 @@ export default function LoginPage() {
 
       if (response.token) {
         saveSession(response);
-        router.push(["admin", "ADMIN", "administrator", "Administrador"].includes(response.role) ? "/vistas/documentos-verificacion" : "/vistas/perfil-usuario");
+        router.push(["admin", "ADMIN", "administrator", "Administrador"].includes(response.role) ? "/vistas/documentos-verificacion" : "/vistas/alojamiento");
         return;
       }
 
