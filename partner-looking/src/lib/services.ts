@@ -59,7 +59,18 @@ export async function loginUser(input: LoginInput): Promise<AuthResult> {
 }
 
 export async function registerUser(input: RegisterInput): Promise<AuthResult> {
-  const raw = await postJson<RawAuthResult>(AUTH_REGISTER_PATH, input, false);
+  const raw = await postJson<RawAuthResult>(
+    AUTH_REGISTER_PATH,
+    {
+      name: input.name,
+      nombreCompleto: input.name,
+      email: input.email,
+      password: input.password,
+      phone: input.phone,
+      telefono: input.phone,
+    },
+    false,
+  );
   return mapAuthResult(raw);
 }
 
