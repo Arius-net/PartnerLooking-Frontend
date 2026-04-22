@@ -97,7 +97,6 @@ async function request<TResponse>(
 
   const response = await fetch(buildApiUrl(path), {
     method,
-    credentials: "include",
     headers,
     body: method === "GET" ? undefined : useFormData ? (options?.body as FormData) : options?.body === undefined ? undefined : JSON.stringify(options.body),
   });
