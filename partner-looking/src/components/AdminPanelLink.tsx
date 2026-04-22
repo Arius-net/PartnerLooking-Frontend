@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useSyncExternalStore } from "react";
+import { getStoredRole, SESSION_EVENT_NAME } from "@/lib/session";
 
 function ShieldIcon() {
   return (
@@ -15,10 +16,14 @@ export default function AdminPanelLink() {
   const isAdmin = useSyncExternalStore(
     (callback) => {
       window.addEventListener("storage", callback);
-      return () => window.removeEventListener("storage", callback);
+      window.addEventListener(SESSION_EVENT_NAME, callback);
+      return () => {
+        window.removeEventListener("storage", callback);
+        window.removeEventListener(SESSION_EVENT_NAME, callback);
+      };
     },
     () => {
-      const storedRole = window.localStorage.getItem("partnerlooking_role") || "";
+      const storedRole = getStoredRole();
       return ["admin", "ADMIN", "administrator", "Administrador"].includes(storedRole);
     },
     () => false,

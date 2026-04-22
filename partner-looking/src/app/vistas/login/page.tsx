@@ -2,7 +2,9 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
-import { AUTH_LOGIN_PATH, postJson } from "@/lib/api";
+import { useRouter } from "next/navigation";
+import { loginUser } from "@/lib/services";
+import { saveSession } from "@/lib/session";
 
 function MailIcon() {
   return (
@@ -68,6 +70,7 @@ function HomeIcon() {
 }
 
 export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
@@ -87,29 +90,16 @@ export default function LoginPage() {
 
     try {
       setLoading(true);
-
-      const response = await postJson<{ token?: string; accessToken?: string }>(AUTH_LOGIN_PATH, {
+      const response = await loginUser({
         email,
         password,
         rememberMe,
       });
 
-      const token = response.token || response.accessToken;
-      if (token) {
-        localStorage.setItem("partnerlooking_token", token);
-      }
-
-      const candidateRole =
-        (response as { role?: string }).role ||
-        (response as { rol?: string }).rol ||
-        (response as { user?: { role?: string; rol?: string } }).user?.role ||
-        (response as { user?: { role?: string; rol?: string } }).user?.rol ||
-        (response as { usuario?: { role?: string; rol?: string } }).usuario?.role ||
-        (response as { usuario?: { role?: string; rol?: string } }).usuario?.rol ||
-        "";
-
-      if (candidateRole) {
-        localStorage.setItem("partnerlooking_role", candidateRole);
+      if (response.token) {
+        saveSession(response);
+        router.push(["admin", "ADMIN", "administrator", "Administrador"].includes(response.role) ? "/vistas/documentos-verificacion" : "/vistas/perfil-usuario");
+        return;
       }
 
       setSuccess("Inicio de sesión exitoso. Ya estás conectado con el backend.");

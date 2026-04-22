@@ -2,7 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { clearSession, getStoredToken, getStoredUserId } from "@/lib/session";
+import { deleteUserAccount, getUserById, getUserContact, updateUserPassword, updateUserProfile, type UserProfile } from "@/lib/services";
 
 type ProfileTab = "informacion" | "publicaciones" | "favoritos";
 
@@ -68,7 +71,130 @@ function TabIcon({ kind }: { kind: string }) {
 }
 
 export default function PerfilUsuarioPage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<ProfileTab>("informacion");
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [contact, setContact] = useState<{ email: string; phone: string }>({ email: "", phone: "" });
+  const [loading, setLoading] = useState(true);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const [feedback, setFeedback] = useState("");
+  const [error, setError] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  useEffect(() => {
+    if (!getStoredToken()) {
+      router.replace("/vistas/login");
+      return;
+    }
+
+    const userId = getStoredUserId();
+
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
+
+    let active = true;
+
+    void (async () => {
+      try {
+        setLoading(true);
+        const [user, userContact] = await Promise.all([getUserById(userId), getUserContact(userId)]);
+        if (active) {
+          setProfile(user);
+          setContact(userContact);
+        }
+      } catch (requestError) {
+        if (active) {
+          setError(requestError instanceof Error ? requestError.message : "No se pudo cargar el perfil.");
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [router]);
+
+  async function handleSaveProfile() {
+    setFeedback("");
+    setError("");
+
+    if (!profile) {
+      return;
+    }
+
+    try {
+      setSavingProfile(true);
+      const updated = await updateUserProfile(profile);
+      setProfile(updated);
+      setFeedback("Perfil actualizado correctamente.");
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "No se pudo actualizar el perfil.");
+    } finally {
+      setSavingProfile(false);
+    }
+  }
+
+  async function handleUpdatePassword() {
+    setFeedback("");
+    setError("");
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setError("Completa la contraseña actual y la nueva contraseña.");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setError("Las contraseñas nuevas no coinciden.");
+      return;
+    }
+
+    try {
+      setSavingPassword(true);
+      await updateUserPassword(currentPassword, newPassword);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setFeedback("Contraseña actualizada correctamente.");
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "No se pudo actualizar la contraseña.");
+    } finally {
+      setSavingPassword(false);
+    }
+  }
+
+  async function handleDeleteAccount() {
+    const accepted = window.confirm("¿Seguro que deseas eliminar tu cuenta? Esta acción no se puede deshacer.");
+
+    if (!accepted) {
+      return;
+    }
+
+    try {
+      setDeletingAccount(true);
+      await deleteUserAccount();
+      clearSession();
+      router.push("/vistas/registro");
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "No se pudo eliminar la cuenta.");
+    } finally {
+      setDeletingAccount(false);
+    }
+  }
+
+  const summaryName = profile?.fullName || "Juan Pérez";
+  const summaryUsername = profile?.username ? `@${profile.username}` : "@juanperez";
+  const summaryEmail = profile?.email || contact.email || "juan.perez@ejemplo.com";
+  const summaryPhone = profile?.phone || contact.phone || "+52 55 1234 5678";
 
   return (
     <div className="profile-page">
@@ -103,11 +229,11 @@ export default function PerfilUsuarioPage() {
 
             <div className="profile-summary-body">
               <div className="profile-name-row">
-                <h2>Juan Pérez</h2>
+                <h2>{summaryName}</h2>
                 <span className="verified-badge">✓</span>
               </div>
-              <p className="profile-username">@juanperez</p>
-              <p className="profile-member-since">Miembro desde Ene 2025</p>
+              <p className="profile-username">{summaryUsername}</p>
+              <p className="profile-member-since">{summaryEmail}</p>
 
               <div className="profile-stats-grid">
                 <div>
@@ -135,6 +261,20 @@ export default function PerfilUsuarioPage() {
                       </strong>
                     </div>
                   ))}
+                </div>
+              </div>
+
+              <div className="verification-card">
+                <h3>Contacto actual</h3>
+                <div className="verification-list">
+                  <div className="verification-row">
+                    <span>Email</span>
+                    <strong>{summaryEmail}</strong>
+                  </div>
+                  <div className="verification-row">
+                    <span>Teléfono</span>
+                    <strong>{summaryPhone}</strong>
+                  </div>
                 </div>
               </div>
 
@@ -171,25 +311,25 @@ export default function PerfilUsuarioPage() {
                 <div className="profile-form-grid">
                   <label className="profile-field profile-field-full">
                     <span>Nombre completo</span>
-                    <input type="text" placeholder="Juan Pérez González" />
+                    <input type="text" placeholder="Juan Pérez González" value={profile?.fullName || ""} onChange={(event) => setProfile((current) => ({ ...(current || { id: "", fullName: "", username: "", email: "", phone: "", age: 0, gender: "", university: "", career: "", semester: "", about: "" }), fullName: event.target.value }))} />
                   </label>
                   <label className="profile-field profile-field-full verified-field">
                     <span>Email</span>
-                    <input type="email" placeholder="juan.perez@ejemplo.com" />
+                    <input type="email" placeholder="juan.perez@ejemplo.com" value={profile?.email || ""} onChange={(event) => setProfile((current) => ({ ...(current || { id: "", fullName: "", username: "", email: "", phone: "", age: 0, gender: "", university: "", career: "", semester: "", about: "" }), email: event.target.value }))} />
                     <span className="field-check">✓</span>
                   </label>
                   <label className="profile-field verified-field">
                     <span>Teléfono</span>
-                    <input type="tel" placeholder="+52 55 1234 5678" />
+                    <input type="tel" placeholder="+52 55 1234 5678" value={profile?.phone || ""} onChange={(event) => setProfile((current) => ({ ...(current || { id: "", fullName: "", username: "", email: "", phone: "", age: 0, gender: "", university: "", career: "", semester: "", about: "" }), phone: event.target.value }))} />
                     <span className="field-check">✓</span>
                   </label>
                   <label className="profile-field">
                     <span>Edad</span>
-                    <input type="number" placeholder="24" />
+                    <input type="number" placeholder="24" value={profile?.age || 0} onChange={(event) => setProfile((current) => ({ ...(current || { id: "", fullName: "", username: "", email: "", phone: "", age: 0, gender: "", university: "", career: "", semester: "", about: "" }), age: Number(event.target.value) }))} />
                   </label>
                   <label className="profile-field profile-field-full">
                     <span>Género</span>
-                    <select defaultValue="Hombre">
+                    <select value={profile?.gender || "Hombre"} onChange={(event) => setProfile((current) => ({ ...(current || { id: "", fullName: "", username: "", email: "", phone: "", age: 0, gender: "", university: "", career: "", semester: "", about: "" }), gender: event.target.value }))}>
                       <option>Hombre</option>
                       <option>Mujer</option>
                       <option>No binario</option>
@@ -204,15 +344,15 @@ export default function PerfilUsuarioPage() {
                 <div className="profile-form-grid">
                   <label className="profile-field profile-field-full">
                     <span>Universidad</span>
-                    <input type="text" placeholder="Universidad Nacional Autónoma de México" />
+                    <input type="text" placeholder="Universidad Nacional Autónoma de México" value={profile?.university || ""} onChange={(event) => setProfile((current) => ({ ...(current || { id: "", fullName: "", username: "", email: "", phone: "", age: 0, gender: "", university: "", career: "", semester: "", about: "" }), university: event.target.value }))} />
                   </label>
                   <label className="profile-field profile-field-full">
                     <span>Carrera</span>
-                    <input type="text" placeholder="Ingeniería en Computación" />
+                    <input type="text" placeholder="Ingeniería en Computación" value={profile?.career || ""} onChange={(event) => setProfile((current) => ({ ...(current || { id: "", fullName: "", username: "", email: "", phone: "", age: 0, gender: "", university: "", career: "", semester: "", about: "" }), career: event.target.value }))} />
                   </label>
                   <label className="profile-field profile-field-full">
                     <span>Semestre</span>
-                    <select defaultValue="6to semestre">
+                    <select value={profile?.semester || "6to semestre"} onChange={(event) => setProfile((current) => ({ ...(current || { id: "", fullName: "", username: "", email: "", phone: "", age: 0, gender: "", university: "", career: "", semester: "", about: "" }), semester: event.target.value }))}>
                       <option>1er semestre</option>
                       <option>2do semestre</option>
                       <option>3er semestre</option>
@@ -232,8 +372,45 @@ export default function PerfilUsuarioPage() {
                   className="profile-about"
                   rows={5}
                   placeholder="Estudiante de ingeniería en la UNAM, me gusta la tecnología, el deporte y conocer gente nueva. Busco un ambiente tranquilo y respetuoso para vivir."
+                  value={profile?.about || ""}
+                  onChange={(event) => setProfile((current) => ({ ...(current || { id: "", fullName: "", username: "", email: "", phone: "", age: 0, gender: "", university: "", career: "", semester: "", about: "" }), about: event.target.value }))}
                 />
               </section>
+
+              <section className="profile-panel">
+                <h3>Seguridad</h3>
+                <div className="profile-form-grid">
+                  <label className="profile-field profile-field-full">
+                    <span>Contraseña actual</span>
+                    <input type="password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} />
+                  </label>
+                  <label className="profile-field">
+                    <span>Nueva contraseña</span>
+                    <input type="password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} />
+                  </label>
+                  <label className="profile-field">
+                    <span>Confirmar nueva contraseña</span>
+                    <input type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} />
+                  </label>
+                  <div className="profile-panel-actions">
+                    <button type="button" className="edit-profile-btn" onClick={() => void handleUpdatePassword()} disabled={savingPassword || savingProfile}>
+                      {savingPassword ? "Actualizando..." : "Actualizar contraseña"}
+                    </button>
+                    <button type="button" className="edit-profile-btn" onClick={handleDeleteAccount} disabled={deletingAccount}>
+                      {deletingAccount ? "Eliminando..." : "Eliminar cuenta"}
+                    </button>
+                  </div>
+                </div>
+              </section>
+
+              {error && <p className="auth-feedback auth-feedback-error">{error}</p>}
+              {feedback && <p className="auth-feedback auth-feedback-success">{feedback}</p>}
+
+              <div className="profile-panel-actions">
+                <button type="button" className="edit-profile-btn" onClick={() => void handleSaveProfile()} disabled={savingProfile}>
+                  {savingProfile ? "Guardando..." : "Guardar perfil"}
+                </button>
+              </div>
             </>
           )}
 

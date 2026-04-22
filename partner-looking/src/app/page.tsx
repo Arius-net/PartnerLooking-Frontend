@@ -1,18 +1,14 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import AdminPanelLink from "@/components/AdminPanelLink";
+import { addFavorite, getListings, getNearbyListings, removeFavorite, type Listing } from "@/lib/services";
 
 type Feature = {
   title: string;
   text: string;
-};
-
-type Listing = {
-  title: string;
-  location: string;
-  price: string;
-  people: string;
-  image: string;
 };
 
 const features: Feature[] = [
@@ -31,57 +27,6 @@ const features: Feature[] = [
   {
     title: "Facil y Rapido",
     text: "Encuentra tu match en minutos",
-  },
-];
-
-const listings: Listing[] = [
-  {
-    title: "Habitacion amplia cerca de UNAM",
-    location: "Ciudad Universitaria, CDMX",
-    price: "$ 3,500/mes",
-    people: "2 personas",
-    image:
-      "https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=1200",
-  },
-  {
-    title: "Departamento completo - 2 recamaras",
-    location: "Narvarte, CDMX",
-    price: "$ 12,000/mes",
-    people: "2 personas",
-    image:
-      "https://images.pexels.com/photos/1457842/pexels-photo-1457842.jpeg?auto=compress&cs=tinysrgb&w=1200",
-  },
-  {
-    title: "Busco roommate - Estudiante TEC",
-    location: "Santa Fe, CDMX",
-    price: "$ 4,500/mes",
-    people: "2 personas",
-    image:
-      "https://images.pexels.com/photos/1643384/pexels-photo-1643384.jpeg?auto=compress&cs=tinysrgb&w=1200",
-  },
-  {
-    title: "Cuarto individual con bano privado",
-    location: "Copilco, CDMX",
-    price: "$ 5,200/mes",
-    people: "3 personas",
-    image:
-      "https://images.pexels.com/photos/1454806/pexels-photo-1454806.jpeg?auto=compress&cs=tinysrgb&w=1200",
-  },
-  {
-    title: "Estudio amueblado - Zona segura",
-    location: "Del Valle, CDMX",
-    price: "$ 8,500/mes",
-    people: "1 persona",
-    image:
-      "https://images.pexels.com/photos/271743/pexels-photo-271743.jpeg?auto=compress&cs=tinysrgb&w=1200",
-  },
-  {
-    title: "Habitacion compartida economica",
-    location: "Coyoacan, CDMX",
-    price: "$ 2,800/mes",
-    people: "4 personas",
-    image:
-      "https://images.pexels.com/photos/1571453/pexels-photo-1571453.jpeg?auto=compress&cs=tinysrgb&w=1200",
   },
 ];
 
@@ -126,6 +71,108 @@ function IconSpark() {
 const featureIcons = [IconShield, IconGroup, IconHome, IconSpark];
 
 export default function Home() {
+  const [listings, setListings] = useState<Listing[]>([]);
+  const [nearbyListings, setNearbyListings] = useState<Listing[]>([]);
+  const [loadingListings, setLoadingListings] = useState(true);
+  const [loadingNearby, setLoadingNearby] = useState(false);
+  const [listingError, setListingError] = useState("");
+  const [nearbyError, setNearbyError] = useState("");
+  const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
+  const [latitude, setLatitude] = useState("");
+  const [longitude, setLongitude] = useState("");
+
+  useEffect(() => {
+    let active = true;
+
+    void (async () => {
+      try {
+        setLoadingListings(true);
+        const response = await getListings();
+        if (active) {
+          setListings(response);
+        }
+      } catch (error) {
+        if (active) {
+          setListingError(error instanceof Error ? error.message : "No se pudieron cargar las publicaciones.");
+        }
+      } finally {
+        if (active) {
+          setLoadingListings(false);
+        }
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const displayedListings = nearbyListings.length > 0 ? nearbyListings : listings;
+
+  const priceLabel = (value: number) => `$ ${value.toLocaleString("es-MX")}/mes`;
+
+  async function toggleFavorite(listingId: string) {
+    const isFavorite = favoriteIds.includes(listingId);
+
+    try {
+      setFavoriteIds((current) => (isFavorite ? current.filter((item) => item !== listingId) : [...current, listingId]));
+
+      if (isFavorite) {
+        await removeFavorite(listingId);
+      } else {
+        await addFavorite(listingId);
+      }
+    } catch (error) {
+      setFavoriteIds((current) => (isFavorite ? [...current, listingId] : current.filter((item) => item !== listingId)));
+      setNearbyError(error instanceof Error ? error.message : "No se pudo actualizar el favorito.");
+    }
+  }
+
+  async function loadNearbyListings(lat: number, lng: number) {
+    setNearbyError("");
+    setLoadingNearby(true);
+
+    try {
+      const response = await getNearbyListings(lat, lng);
+      setNearbyListings(response);
+    } catch (error) {
+      setNearbyError(error instanceof Error ? error.message : "No se pudieron cargar las publicaciones cercanas.");
+    } finally {
+      setLoadingNearby(false);
+    }
+  }
+
+  async function handleNearbyFromBrowserLocation() {
+    setNearbyError("");
+
+    if (!navigator.geolocation) {
+      setNearbyError("Tu navegador no soporta geolocalización.");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        void loadNearbyListings(position.coords.latitude, position.coords.longitude);
+      },
+      () => {
+        setNearbyError("No se pudo obtener tu ubicación. Usa las coordenadas manuales.");
+      },
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
+  }
+
+  async function handleNearbyManualSearch() {
+    const lat = Number(latitude);
+    const lng = Number(longitude);
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      setNearbyError("Ingresa coordenadas válidas para latitud y longitud.");
+      return;
+    }
+
+    await loadNearbyListings(lat, lng);
+  }
+
   return (
     <div className="home-page">
       <header className="topbar">
@@ -202,8 +249,27 @@ export default function Home() {
           <p>Explora las mejores opciones de alojamiento y roommates</p>
         </div>
 
+        <div className="nearby-controls">
+          <button type="button" className="filter-btn" onClick={handleNearbyFromBrowserLocation} disabled={loadingNearby}>
+            {loadingNearby ? "Buscando cerca de ti..." : "Usar mi ubicación"}
+          </button>
+          <div className="nearby-manual-inputs">
+            <input type="number" step="any" placeholder="Latitud" value={latitude} onChange={(event) => setLatitude(event.target.value)} />
+            <input type="number" step="any" placeholder="Longitud" value={longitude} onChange={(event) => setLongitude(event.target.value)} />
+            <button type="button" className="filter-btn" onClick={handleNearbyManualSearch} disabled={loadingNearby}>
+              Buscar cerca
+            </button>
+          </div>
+        </div>
+
+        {listingError && <p className="listing-feedback listing-feedback-error">{listingError}</p>}
+        {nearbyError && <p className="listing-feedback listing-feedback-error">{nearbyError}</p>}
+
         <div className="listing-grid">
-          {listings.map((item) => (
+          {displayedListings.length === 0 && !loadingListings ? (
+            <p className="listing-empty-state">No hay publicaciones disponibles por ahora.</p>
+          ) : null}
+          {displayedListings.map((item) => (
             <article className="listing-card" key={item.title}>
               <div className="image-wrap">
                 <Image
@@ -213,7 +279,7 @@ export default function Home() {
                   sizes="(max-width: 720px) 100vw, (max-width: 1080px) 50vw, 33vw"
                 />
                 <span className="pill">Disponible</span>
-                <button className="save-btn" type="button" aria-label="Guardar">
+                <button className="save-btn" type="button" aria-label="Guardar" aria-pressed={favoriteIds.includes(item.id)} onClick={() => toggleFavorite(item.id)}>
                   <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M12 20.5s-6.5-3.8-6.5-8.8c0-2.4 1.9-4.2 4.2-4.2 1.3 0 2.2.5 2.8 1.4.6-.9 1.5-1.4 2.8-1.4 2.3 0 4.2 1.8 4.2 4.2 0 5-6.5 8.8-6.5 8.8z" />
                   </svg>
@@ -224,10 +290,10 @@ export default function Home() {
                 <h3>{item.title}</h3>
                 <p className="location">{item.location}</p>
                 <div className="meta-row">
-                  <span className="price">{item.price}</span>
+                  <span className="price">{priceLabel(item.price)}</span>
                   <span className="people">{item.people}</span>
                 </div>
-                <Link className="card-link" href="/vistas/publicacion-detalle">
+                <Link className="card-link" href={`/vistas/publicacion-detalle?listingId=${encodeURIComponent(item.id)}&userId=${encodeURIComponent(item.hostId)}`}>
                   Ver detalle
                 </Link>
               </div>

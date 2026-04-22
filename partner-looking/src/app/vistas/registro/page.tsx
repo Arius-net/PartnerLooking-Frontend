@@ -2,7 +2,9 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
-import { AUTH_REGISTER_PATH, postJson } from "@/lib/api";
+import { useRouter } from "next/navigation";
+import { registerUser } from "@/lib/services";
+import { saveSession } from "@/lib/session";
 
 function MailIcon() {
   return (
@@ -66,6 +68,7 @@ function ShieldIcon() {
 }
 
 export default function RegistroPage() {
+  const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -92,12 +95,18 @@ export default function RegistroPage() {
 
     try {
       setLoading(true);
-      await postJson(AUTH_REGISTER_PATH, {
+      const response = await registerUser({
         name,
         email,
         phone,
         password,
       });
+      if (response.token) {
+        saveSession(response);
+        router.push(["admin", "ADMIN", "administrator", "Administrador"].includes(response.role) ? "/vistas/documentos-verificacion" : "/vistas/perfil-usuario");
+        return;
+      }
+
       setSuccess("Registro exitoso. Tu cuenta quedó conectada con el backend.");
       setName("");
       setEmail("");

@@ -2,6 +2,8 @@
 
 import Image from "next/image";
 import { useMemo, useState } from "react";
+import { clearSession } from "@/lib/session";
+import { updateValidationStatus, uploadValidationDocument } from "@/lib/services";
 
 type ReviewStatus = "Pendiente" | "Aprobado" | "Rechazado";
 type FilterTab = "todos" | "pendientes" | "aprobados" | "rechazados";
@@ -148,6 +150,11 @@ export default function DocumentosVerificacionPage() {
   const [activeTab, setActiveTab] = useState<FilterTab>("pendientes");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDocumentId, setSelectedDocumentId] = useState(initialDocuments[0].id);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadMessage, setUploadMessage] = useState("");
+  const [uploadError, setUploadError] = useState("");
+  const [actionMessage, setActionMessage] = useState("");
+  const [actionError, setActionError] = useState("");
 
   const filteredDocuments = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
@@ -185,22 +192,80 @@ export default function DocumentosVerificacionPage() {
       return;
     }
 
-    setDocuments((currentDocuments) =>
-      currentDocuments.map((document) =>
-        document.id === selectedDocument.id
-          ? {
-              ...document,
-              status,
-            }
-          : document,
-      ),
-    );
+    setActionMessage("");
+    setActionError("");
+
+    const backendStatus = status === "Aprobado" ? "VALID" : status === "Rechazado" ? "REJECTED" : null;
+
+    if (!backendStatus) {
+      setDocuments((currentDocuments) =>
+        currentDocuments.map((document) =>
+          document.id === selectedDocument.id
+            ? {
+                ...document,
+                status,
+              }
+            : document,
+        ),
+      );
+      return;
+    }
+
+    void (async () => {
+      try {
+        await updateValidationStatus(selectedDocument.id, backendStatus);
+        setDocuments((currentDocuments) =>
+          currentDocuments.map((document) =>
+            document.id === selectedDocument.id
+              ? {
+                  ...document,
+                  status,
+                }
+              : document,
+          ),
+        );
+        setActionMessage(`Documento actualizado a ${status.toLowerCase()}.`);
+      } catch (error) {
+        setActionError(error instanceof Error ? error.message : "No se pudo actualizar el estado.");
+      }
+    })();
   }
 
   function logout() {
-    window.localStorage.removeItem("partnerlooking_token");
-    window.localStorage.removeItem("partnerlooking_role");
-    window.location.href = "/";
+    clearSession();
+    window.location.href = "/vistas/login";
+  }
+
+  async function handleUploadDocument() {
+    setUploadMessage("");
+    setUploadError("");
+
+    if (!selectedFile) {
+      setUploadError("Selecciona un archivo antes de subirlo.");
+      return;
+    }
+
+    try {
+      const result = await uploadValidationDocument(selectedFile);
+      const newItem: DocumentItem = {
+        id: result.verificationId || `DOC-${Date.now()}`,
+        name: "Nuevo documento",
+        email: "Pendiente de revisión",
+        phone: "",
+        university: "",
+        documentType: selectedFile.name,
+        submittedAt: new Date().toLocaleString("es-MX", { dateStyle: "medium", timeStyle: "short" }),
+        status: "Pendiente",
+        image: initialDocuments[0].image,
+      };
+
+      setDocuments((currentDocuments) => [newItem, ...currentDocuments]);
+      setSelectedDocumentId(newItem.id);
+      setSelectedFile(null);
+      setUploadMessage(`Documento subido. Estado backend: ${result.status}.`);
+    } catch (error) {
+      setUploadError(error instanceof Error ? error.message : "No se pudo subir el documento.");
+    }
   }
 
   return (
@@ -275,6 +340,21 @@ export default function DocumentosVerificacionPage() {
           <button type="button" className={`docs-tab ${activeTab === "aprobados" ? "active" : ""}`} onClick={() => setActiveTab("aprobados")}>Aprobados</button>
           <button type="button" className={`docs-tab ${activeTab === "rechazados" ? "active" : ""}`} onClick={() => setActiveTab("rechazados")}>Rechazados</button>
         </div>
+      </section>
+
+      <section className="docs-upload-panel">
+        <div>
+          <h3>Subir documento de verificación</h3>
+          <p>El archivo se envía como multipart/form-data con el campo documento y queda en estado PENDING.</p>
+        </div>
+        <div className="docs-upload-actions">
+          <input type="file" accept="image/*,application/pdf" onChange={(event) => setSelectedFile(event.target.files?.[0] || null)} />
+          <button type="button" className="docs-action approve" onClick={handleUploadDocument}>
+            Subir documento
+          </button>
+        </div>
+        {uploadError && <p className="auth-feedback auth-feedback-error">{uploadError}</p>}
+        {uploadMessage && <p className="auth-feedback auth-feedback-success">{uploadMessage}</p>}
       </section>
 
       <section className="docs-cards-grid">
@@ -374,6 +454,8 @@ export default function DocumentosVerificacionPage() {
                 Rechazar
               </button>
             </div>
+            {actionError && <p className="auth-feedback auth-feedback-error">{actionError}</p>}
+            {actionMessage && <p className="auth-feedback auth-feedback-success">{actionMessage}</p>}
           </div>
         </div>
       </section>

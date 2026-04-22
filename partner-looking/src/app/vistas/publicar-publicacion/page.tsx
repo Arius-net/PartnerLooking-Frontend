@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { createListing } from "@/lib/services";
 
 type StepId = 1 | 2 | 3 | 4 | 5;
 
@@ -180,12 +182,91 @@ function AmenityIcon({ label }: { label: string }) {
 }
 
 export default function CreatePublicationPage() {
+  const router = useRouter();
   const [currentStep, setCurrentStep] = useState<StepId>(1);
   const [selectedType, setSelectedType] = useState("room");
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [address, setAddress] = useState("");
+  const [city, setCity] = useState("");
+  const [neighborhood, setNeighborhood] = useState("");
+  const [price, setPrice] = useState("");
+  const [availableFrom, setAvailableFrom] = useState("");
+  const [numberOfRoommates, setNumberOfRoommates] = useState("1 persona");
+  const [lat, setLat] = useState("");
+  const [lng, setLng] = useState("");
+  const [publishError, setPublishError] = useState("");
+  const [publishMessage, setPublishMessage] = useState("");
+  const [publishing, setPublishing] = useState(false);
   const progress = useMemo(() => currentStep * 20, [currentStep]);
 
   const goNext = () => setCurrentStep((step) => Math.min(5, step + 1) as StepId);
   const goBack = () => setCurrentStep((step) => Math.max(1, step - 1) as StepId);
+
+  async function useBrowserLocation() {
+    setPublishError("");
+
+    if (!navigator.geolocation) {
+      setPublishError("Tu navegador no soporta geolocalización.");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLat(String(position.coords.latitude));
+        setLng(String(position.coords.longitude));
+      },
+      () => setPublishError("No se pudo obtener la ubicación actual. Usa las coordenadas manuales."),
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
+  }
+
+  async function handlePublish() {
+    setPublishError("");
+    setPublishMessage("");
+
+    const parsedPrice = Number(price);
+    const parsedLat = Number(lat);
+    const parsedLng = Number(lng);
+
+    if (!title || !description || !address || !city || !neighborhood || !price || !availableFrom) {
+      setPublishError("Completa la información básica y de ubicación antes de publicar.");
+      return;
+    }
+
+    if (!Number.isFinite(parsedPrice) || parsedPrice <= 0) {
+      setPublishError("Ingresa un precio válido mayor a cero.");
+      return;
+    }
+
+    if (!Number.isFinite(parsedLat) || !Number.isFinite(parsedLng)) {
+      setPublishError("Ingresa coordenadas válidas para latitud y longitud.");
+      return;
+    }
+
+    try {
+      setPublishing(true);
+      await createListing({
+        title,
+        description,
+        address,
+        city,
+        neighborhood,
+        price: parsedPrice,
+        availableFrom,
+        numberOfRoommates,
+        lat: parsedLat,
+        lng: parsedLng,
+        type: selectedType,
+      });
+      setPublishMessage("Publicación creada correctamente.");
+      router.push("/");
+    } catch (error) {
+      setPublishError(error instanceof Error ? error.message : "No se pudo crear la publicación.");
+    } finally {
+      setPublishing(false);
+    }
+  }
 
   return (
     <div className="create-page">
@@ -228,7 +309,9 @@ export default function CreatePublicationPage() {
                     key={item.id}
                     type="button"
                     className={`publication-type-card ${selectedType === item.id ? "selected" : ""}`}
-                    onClick={() => setSelectedType(item.id)}
+                    onClick={() => {
+                      setSelectedType(item.id);
+                    }}
                   >
                     <span className="publication-type-icon">
                       <StepIcon kind={item.icon} />
@@ -248,22 +331,24 @@ export default function CreatePublicationPage() {
               <div className="form-grid">
                 <label className="field field-full">
                   <span>Título de la publicación</span>
-                  <input type="text" placeholder="Ej: Habitación amplia cerca de UNAM" />
+                  <input type="text" placeholder="Ej: Habitación amplia cerca de UNAM" value={title} onChange={(event) => setTitle(event.target.value)} />
                 </label>
                 <label className="field field-full">
                   <span>Descripción</span>
                   <textarea
                     rows={7}
                     placeholder="Describe las características principales, ambiente, y lo que buscas en un roommate..."
+                    value={description}
+                    onChange={(event) => setDescription(event.target.value)}
                   />
                   <small>Mínimo 100 caracteres</small>
                 </label>
                 <label className="field field-full">
                   <span>Tipo de espacio</span>
-                  <select defaultValue="Habitación privada">
-                    <option>Habitación privada</option>
-                    <option>Departamento completo</option>
-                    <option>Espacio compartido</option>
+                  <select value={selectedType} onChange={(event) => setSelectedType(event.target.value)}>
+                    <option value="room">Habitación privada</option>
+                    <option value="apartment">Departamento completo</option>
+                    <option value="roommate">Espacio compartido</option>
                   </select>
                 </label>
               </div>
@@ -277,36 +362,46 @@ export default function CreatePublicationPage() {
               <div className="form-grid form-grid-two">
                 <label className="field field-full">
                   <span>Dirección completa</span>
-                  <input type="text" placeholder="Av. Universidad 3000" />
+                  <input type="text" placeholder="Av. Universidad 3000" value={address} onChange={(event) => setAddress(event.target.value)} />
                 </label>
                 <label className="field">
                   <span>Ciudad</span>
-                  <input type="text" placeholder="Ciudad de México" />
+                  <input type="text" placeholder="Ciudad de México" value={city} onChange={(event) => setCity(event.target.value)} />
                 </label>
                 <label className="field">
                   <span>Colonia/Delegación</span>
-                  <input type="text" placeholder="Ciudad Universitaria" />
+                  <input type="text" placeholder="Ciudad Universitaria" value={neighborhood} onChange={(event) => setNeighborhood(event.target.value)} />
                 </label>
                 <label className="field">
                   <span>Precio mensual (MXN)</span>
                   <div className="input-prefix">
                     <span>$</span>
-                    <input type="text" placeholder="3500" />
+                    <input type="number" min="1" step="1" placeholder="3500" value={price} onChange={(event) => setPrice(event.target.value)} />
                   </div>
                 </label>
                 <label className="field">
                   <span>Disponible desde</span>
-                  <input type="text" placeholder="mm/dd/yyyy" />
+                  <input type="date" value={availableFrom} onChange={(event) => setAvailableFrom(event.target.value)} />
                 </label>
                 <label className="field field-full">
                   <span>Número de roommates actuales</span>
-                  <select defaultValue="1 persona">
+                  <select value={numberOfRoommates} onChange={(event) => setNumberOfRoommates(event.target.value)}>
                     <option>1 persona</option>
                     <option>2 personas</option>
                     <option>3 personas</option>
                     <option>4 personas</option>
                   </select>
                 </label>
+                <div className="field field-full">
+                  <span>Coordenadas</span>
+                  <div className="nearby-manual-inputs">
+                    <input type="number" step="any" placeholder="Latitud" value={lat} onChange={(event) => setLat(event.target.value)} />
+                    <input type="number" step="any" placeholder="Longitud" value={lng} onChange={(event) => setLng(event.target.value)} />
+                    <button type="button" className="filter-btn" onClick={useBrowserLocation}>
+                      Usar mi ubicación
+                    </button>
+                  </div>
+                </div>
               </div>
             </>
           )}
@@ -356,6 +451,9 @@ export default function CreatePublicationPage() {
                 <small>JPG, PNG o WEBP · Máximo 10 fotos</small>
               </div>
 
+              {publishError && <p className="auth-feedback auth-feedback-error">{publishError}</p>}
+              {publishMessage && <p className="auth-feedback auth-feedback-success">{publishMessage}</p>}
+
               <div className="photos-tips">
                 <h3>Consejos para mejores fotos</h3>
                 <ul>
@@ -380,8 +478,8 @@ export default function CreatePublicationPage() {
               <ArrowRightIcon />
             </button>
           ) : (
-            <button type="button" className="publish-action">
-              ✓ Publicar ahora
+            <button type="button" className="publish-action" onClick={handlePublish} disabled={publishing}>
+              {publishing ? "Publicando..." : "✓ Publicar ahora"}
             </button>
           )}
         </footer>

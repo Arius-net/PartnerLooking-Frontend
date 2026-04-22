@@ -1,5 +1,9 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useState, type FormEvent } from "react";
+import { addFavorite, createReview, removeFavorite } from "@/lib/services";
 
 type Amenity = {
   label: string;
@@ -112,6 +116,49 @@ function AmenityIcon({ kind }: { kind: string }) {
 }
 
 export default function PublicacionDetallePage() {
+  const [listingId, setListingId] = useState("listing-demo");
+  const [hostId, setHostId] = useState("host-demo");
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [rating, setRating] = useState("5");
+  const [comment, setComment] = useState("");
+  const [reviewError, setReviewError] = useState("");
+  const [reviewSuccess, setReviewSuccess] = useState("");
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setListingId(params.get("listingId") || "listing-demo");
+    setHostId(params.get("userId") || params.get("hostId") || "host-demo");
+  }, []);
+
+  async function toggleFavorite() {
+    setReviewError("");
+
+    try {
+      if (isFavorite) {
+        await removeFavorite(listingId);
+      } else {
+        await addFavorite(listingId);
+      }
+      setIsFavorite((current) => !current);
+    } catch (error) {
+      setReviewError(error instanceof Error ? error.message : "No se pudo actualizar el favorito.");
+    }
+  }
+
+  async function handleSubmitReview(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setReviewError("");
+    setReviewSuccess("");
+
+    try {
+      await createReview(hostId, Number(rating), comment.trim() || undefined);
+      setReviewSuccess("Reseña enviada correctamente.");
+      setComment("");
+    } catch (error) {
+      setReviewError(error instanceof Error ? error.message : "No se pudo enviar la reseña.");
+    }
+  }
+
   return (
     <div className="detail-page">
       <header className="detail-topbar">
@@ -123,8 +170,8 @@ export default function PublicacionDetallePage() {
             <button type="button" aria-label="Compartir" className="plain-icon-btn">
               ⤴
             </button>
-            <button type="button" aria-label="Favorito" className="plain-icon-btn">
-              ♡
+            <button type="button" aria-label="Favorito" className="plain-icon-btn" onClick={toggleFavorite}>
+              {isFavorite ? "♥" : "♡"}
             </button>
           </div>
         </div>
@@ -281,6 +328,29 @@ export default function PublicacionDetallePage() {
             <button type="button" className="secondary-cta">
               Ver perfil completo
             </button>
+
+            <form className="review-form" onSubmit={handleSubmitReview}>
+              <h4>Deja una reseña</h4>
+              <label>
+                <span>Calificación</span>
+                <select value={rating} onChange={(event) => setRating(event.target.value)}>
+                  <option value="5">5</option>
+                  <option value="4">4</option>
+                  <option value="3">3</option>
+                  <option value="2">2</option>
+                  <option value="1">1</option>
+                </select>
+              </label>
+              <label>
+                <span>Comentario opcional</span>
+                <textarea rows={4} value={comment} onChange={(event) => setComment(event.target.value)} placeholder="Comparte tu experiencia con este anfitrión" />
+              </label>
+              <button type="submit" className="primary-cta">
+                Enviar reseña
+              </button>
+              {reviewError && <p className="auth-feedback auth-feedback-error">{reviewError}</p>}
+              {reviewSuccess && <p className="auth-feedback auth-feedback-success">{reviewSuccess}</p>}
+            </form>
 
             <p className="security-note">
               <strong>Consejo de seguridad:</strong> Nunca transfieras dinero antes de ver la propiedad

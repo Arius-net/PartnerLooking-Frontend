@@ -974,6 +974,99 @@ body {
   padding-bottom: 56px;
 }
 
+.nearby-controls,
+.docs-upload-panel,
+.review-form,
+.profile-panel-actions {
+  margin-top: 18px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(23, 42, 77, 0.04);
+}
+
+.nearby-controls {
+  display: grid;
+  gap: 14px;
+}
+
+.nearby-manual-inputs,
+.docs-upload-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.nearby-manual-inputs input,
+.docs-upload-actions input,
+.review-form input,
+.review-form select,
+.review-form textarea {
+  flex: 1 1 180px;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #f9fbfe;
+  color: var(--text);
+  padding: 11px 12px;
+  font: inherit;
+}
+
+.listing-feedback {
+  margin: 14px 0 0;
+  color: var(--muted);
+}
+
+.listing-feedback-error,
+.auth-feedback-error {
+  color: #c0392b;
+}
+
+.listing-empty-state {
+  margin: 0;
+  padding: 18px;
+  border: 1px dashed var(--line);
+  border-radius: 14px;
+  background: #fbfcfe;
+  color: var(--muted);
+}
+
+.docs-upload-panel {
+  display: grid;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.docs-upload-panel h3,
+.review-form h4 {
+  margin: 0;
+}
+
+.docs-upload-panel p,
+.review-form label span {
+  color: var(--muted);
+}
+
+.profile-panel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: flex-start;
+}
+
+.review-form {
+  display: grid;
+  gap: 12px;
+}
+
+.review-form button,
+.docs-upload-actions button,
+.profile-panel-actions button {
+  justify-self: start;
+}
+
 .roommates-header-block {
   display: flex;
   align-items: center;
