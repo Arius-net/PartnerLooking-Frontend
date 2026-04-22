@@ -241,7 +241,7 @@ export default function RoommatesPage() {
       <section className="roommates-toolbar-wrap">
         <div className="listing-area roommates-shell roommates-tabs-row">
           <div className="tabs">
-            <Link className="tab" href="/" role="tab" aria-selected="false">
+            <Link className="tab" href="/vistas/roommates" role="tab" aria-selected="false">
               Alojamiento
             </Link>
             <button className="tab active" type="button" role="tab" aria-selected="true">

@@ -163,7 +163,7 @@ export default function PublicacionDetallePage() {
     <div className="detail-page">
       <header className="detail-topbar">
         <div className="detail-topbar-inner">
-          <Link href="/" className="back-link">
+          <Link href="/vistas/roommates" className="back-link">
             ← Volver
           </Link>
           <div className="detail-actions">

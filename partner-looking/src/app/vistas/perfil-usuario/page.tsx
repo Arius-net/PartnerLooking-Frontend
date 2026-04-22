@@ -233,7 +233,7 @@ export default function PerfilUsuarioPage() {
   return (
     <div className="profile-page">
       <header className="profile-topbar">
-        <Link href="/" className="back-link">
+        <Link href="/vistas/roommates" className="back-link">
           <BackIcon />
           Volver
         </Link>
