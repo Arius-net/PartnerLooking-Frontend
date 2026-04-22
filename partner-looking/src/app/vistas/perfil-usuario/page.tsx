@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { clearSession, getStoredToken, getStoredUserId } from "@/lib/session";
+import { clearSession, getStoredToken, getStoredUserId, saveSession } from "@/lib/session";
 import { deleteUserAccount, getUserById, getUserContact, updateUserPassword, updateUserProfile, type UserProfile } from "@/lib/services";
 
 type ProfileTab = "informacion" | "publicaciones" | "favoritos";
@@ -85,15 +85,49 @@ export default function PerfilUsuarioPage() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
+  function decodeUserIdFromToken(token: string): string {
+    try {
+      const parts = token.split(".");
+      if (parts.length < 2) {
+        return "";
+      }
+
+      const payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/"))) as {
+        sub?: unknown;
+        userId?: unknown;
+        id?: unknown;
+      };
+
+      if (typeof payload.userId === "string" && payload.userId.trim().length > 0) {
+        return payload.userId;
+      }
+      if (typeof payload.id === "string" && payload.id.trim().length > 0) {
+        return payload.id;
+      }
+      if (typeof payload.sub === "string" && payload.sub.trim().length > 0) {
+        return payload.sub;
+      }
+      return "";
+    } catch {
+      return "";
+    }
+  }
+
   useEffect(() => {
     if (!getStoredToken()) {
       router.replace("/vistas/login");
       return;
     }
 
-    const userId = getStoredUserId();
+    const token = getStoredToken();
+    const userId = getStoredUserId() || decodeUserIdFromToken(token);
+
+    if (userId && !getStoredUserId()) {
+      saveSession({ userId });
+    }
 
     if (!userId) {
+      setError("No se pudo identificar al usuario actual. Vuelve a iniciar sesión.");
       setLoading(false);
       return;
     }
@@ -191,10 +225,10 @@ export default function PerfilUsuarioPage() {
     }
   }
 
-  const summaryName = profile?.fullName || "Juan Pérez";
-  const summaryUsername = profile?.username ? `@${profile.username}` : "@juanperez";
-  const summaryEmail = profile?.email || contact.email || "juan.perez@ejemplo.com";
-  const summaryPhone = profile?.phone || contact.phone || "+52 55 1234 5678";
+  const summaryName = profile?.fullName || (loading ? "Cargando..." : "Sin nombre");
+  const summaryUsername = profile?.username ? `@${profile.username}` : "Sin usuario";
+  const summaryEmail = profile?.email || contact.email || (loading ? "Cargando..." : "Sin correo");
+  const summaryPhone = profile?.phone || contact.phone || (loading ? "Cargando..." : "Sin teléfono");
 
   return (
     <div className="profile-page">
@@ -417,131 +451,14 @@ export default function PerfilUsuarioPage() {
           {activeTab === "publicaciones" && (
             <section className="profile-panel">
               <h3>Mis publicaciones</h3>
-              <div className="publications-grid">
-                <article className="publication-card">
-                  <div className="publication-image">
-                    <Image
-                      src="https://images.pexels.com/photos/1457842/pexels-photo-1457842.jpeg?auto=compress&cs=tinysrgb&w=500"
-                      alt="Departamento Condesa"
-                      fill
-                      sizes="300px"
-                    />
-                    <span className="publication-status active">Activo</span>
-                  </div>
-                  <div className="publication-info">
-                    <h4>Departamento en Condesa</h4>
-                    <p className="publication-type">Busco compañero/a</p>
-                    <p className="publication-price">$8,500/mes</p>
-                    <div className="publication-actions">
-                      <button className="publication-btn edit-btn">Editar</button>
-                      <button className="publication-btn pause-btn">Pausar</button>
-                    </div>
-                  </div>
-                </article>
-
-                <article className="publication-card">
-                  <div className="publication-image">
-                    <Image
-                      src="https://images.pexels.com/photos/1350789/pexels-photo-1350789.jpeg?auto=compress&cs=tinysrgb&w=500"
-                      alt="Cuarto Roma"
-                      fill
-                      sizes="300px"
-                    />
-                    <span className="publication-status paused">Pausado</span>
-                  </div>
-                  <div className="publication-info">
-                    <h4>Cuarto disponible - Roma</h4>
-                    <p className="publication-type">Ofrezco cuarto</p>
-                    <p className="publication-price">$7,200/mes</p>
-                    <div className="publication-actions">
-                      <button className="publication-btn edit-btn">Editar</button>
-                      <button className="publication-btn resume-btn">Reanudar</button>
-                    </div>
-                  </div>
-                </article>
-              </div>
+              <p className="listing-empty-state">Aún no hay publicaciones conectadas para este usuario.</p>
             </section>
           )}
 
           {activeTab === "favoritos" && (
             <section className="profile-panel">
               <h3>Mis favoritos</h3>
-              <div className="favorites-grid">
-                <article className="listing-card">
-                  <div className="image-wrap">
-                    <Image
-                      src="https://images.pexels.com/photos/1743231/pexels-photo-1743231.jpeg?auto=compress&cs=tinysrgb&w=500"
-                      alt="Departamento San Ángel"
-                      fill
-                      sizes="300px"
-                    />
-                    <span className="pill">Verificado</span>
-                    <button type="button" className="save-btn" title="Remover de favoritos">
-                      <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M12 20.5s-6.5-3.8-6.5-8.8c0-2.4 1.9-4.2 4.2-4.2 1.3 0 2.2.5 2.8 1.4.6-.9 1.5-1.4 2.8-1.4 2.3 0 4.2 1.8 4.2 4.2 0 5-6.5 8.8-6.5 8.8z" />
-                      </svg>
-                    </button>
-                  </div>
-                  <div className="card-body">
-                    <h3>Departamento San Ángel</h3>
-                    <p className="location">San Ángel, CDMX</p>
-                    <div className="meta-row">
-                      <strong className="price">$9,500/mes</strong>
-                      <span className="people">2 personas</span>
-                    </div>
-                  </div>
-                </article>
-
-                <article className="listing-card">
-                  <div className="image-wrap">
-                    <Image
-                      src="https://images.pexels.com/photos/1438761/pexels-photo-1438761.jpeg?auto=compress&cs=tinysrgb&w=500"
-                      alt="Cuarto Polanco"
-                      fill
-                      sizes="300px"
-                    />
-                    <span className="pill">Verificado</span>
-                    <button type="button" className="save-btn" title="Remover de favoritos">
-                      <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M12 20.5s-6.5-3.8-6.5-8.8c0-2.4 1.9-4.2 4.2-4.2 1.3 0 2.2.5 2.8 1.4.6-.9 1.5-1.4 2.8-1.4 2.3 0 4.2 1.8 4.2 4.2 0 5-6.5 8.8-6.5 8.8z" />
-                      </svg>
-                    </button>
-                  </div>
-                  <div className="card-body">
-                    <h3>Cuarto Polanco</h3>
-                    <p className="location">Polanco, CDMX</p>
-                    <div className="meta-row">
-                      <strong className="price">$8,200/mes</strong>
-                      <span className="people">4 personas</span>
-                    </div>
-                  </div>
-                </article>
-
-                <article className="listing-card">
-                  <div className="image-wrap">
-                    <Image
-                      src="https://images.pexels.com/photos/1595578/pexels-photo-1595578.jpeg?auto=compress&cs=tinysrgb&w=500"
-                      alt="Depa Coyoacán"
-                      fill
-                      sizes="300px"
-                    />
-                    <span className="pill">Verificado</span>
-                    <button type="button" className="save-btn" title="Remover de favoritos">
-                      <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M12 20.5s-6.5-3.8-6.5-8.8c0-2.4 1.9-4.2 4.2-4.2 1.3 0 2.2.5 2.8 1.4.6-.9 1.5-1.4 2.8-1.4 2.3 0 4.2 1.8 4.2 4.2 0 5-6.5 8.8-6.5 8.8z" />
-                      </svg>
-                    </button>
-                  </div>
-                  <div className="card-body">
-                    <h3>Depa Coyoacán</h3>
-                    <p className="location">Coyoacán, CDMX</p>
-                    <div className="meta-row">
-                      <strong className="price">$7,800/mes</strong>
-                      <span className="people">3 personas</span>
-                    </div>
-                  </div>
-                </article>
-              </div>
+              <p className="listing-empty-state">Aún no hay favoritos conectados para este usuario.</p>
             </section>
           )}
         </section>

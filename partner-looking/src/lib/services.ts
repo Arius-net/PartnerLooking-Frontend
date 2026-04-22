@@ -30,8 +30,30 @@ export type AuthResult = {
 type RawAuthResult = {
   token?: string;
   accessToken?: string;
+  id?: string;
+  userId?: string;
   role?: string;
   rol?: string;
+  data?: {
+    token?: string;
+    accessToken?: string;
+    id?: string;
+    userId?: string;
+    role?: string;
+    rol?: string;
+    user?: {
+      id?: string;
+      userId?: string;
+      role?: string;
+      rol?: string;
+    };
+    usuario?: {
+      id?: string;
+      userId?: string;
+      role?: string;
+      rol?: string;
+    };
+  };
   user?: {
     id?: string;
     userId?: string;
@@ -46,11 +68,44 @@ type RawAuthResult = {
   };
 };
 
+function decodeUserIdFromToken(token: string): string {
+  try {
+    const parts = token.split(".");
+    if (parts.length < 2) {
+      return "";
+    }
+
+    const payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/"))) as {
+      sub?: unknown;
+      userId?: unknown;
+      id?: unknown;
+    };
+
+    if (typeof payload.userId === "string" && payload.userId.trim().length > 0) {
+      return payload.userId;
+    }
+    if (typeof payload.id === "string" && payload.id.trim().length > 0) {
+      return payload.id;
+    }
+    if (typeof payload.sub === "string" && payload.sub.trim().length > 0) {
+      return payload.sub;
+    }
+    return "";
+  } catch {
+    return "";
+  }
+}
+
 function mapAuthResult(raw: RawAuthResult): AuthResult {
-  const token = raw.token || raw.accessToken || "";
-  const role = raw.role || raw.rol || raw.user?.role || raw.user?.rol || raw.usuario?.role || raw.usuario?.rol || "";
-  const userId = raw.user?.id || raw.user?.userId || raw.usuario?.id || raw.usuario?.userId || "";
+  const source = raw.data || raw;
+  const token = source.token || source.accessToken || raw.token || raw.accessToken || "";
+  const role = source.role || source.rol || source.user?.role || source.user?.rol || source.usuario?.role || source.usuario?.rol || raw.role || raw.rol || "";
+  const userId = source.user?.id || source.user?.userId || source.usuario?.id || source.usuario?.userId || source.id || source.userId || raw.user?.id || raw.user?.userId || raw.usuario?.id || raw.usuario?.userId || raw.id || raw.userId || decodeUserIdFromToken(token);
   return { token, role, userId };
+}
+
+export async function getHealth(): Promise<{ status?: string; message?: string }> {
+  return getJson<{ status?: string; message?: string }>("/health", false);
 }
 
 export async function loginUser(input: LoginInput): Promise<AuthResult> {
@@ -157,7 +212,7 @@ function mapUpdateProfilePayload(input: Partial<UserProfile>): Record<string, un
 }
 
 export async function getUserById(userId: string): Promise<UserProfile> {
-  const raw = await getJson<RawUser | { user?: RawUser; data?: RawUser }>(`/users/${userId}`);
+  const raw = await getJson<RawUser | { user?: RawUser; data?: RawUser }>(`/users/${userId}`, false);
   const payload = (raw as { user?: RawUser; data?: RawUser }).user || (raw as { user?: RawUser; data?: RawUser }).data || (raw as RawUser);
   return mapUser(payload);
 }
